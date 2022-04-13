@@ -60,9 +60,14 @@ void Error_Handler(void);
 /* USER CODE BEGIN Private defines */
 
 void Main_Update_MAX5481_Resistance(void);
-short Main_Read_GPIO_As_Binary(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin);
-unsigned char* Main_Get_Resistance_Payload_Part1(void);
-unsigned char* Main_Get_Resistance_Payload_Part2(void);
+char Main_Read_GPIO_As_Binary(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin);
+unsigned char Main_Get_Resistance_Payload_Part1(void);
+unsigned char Main_Get_Resistance_Payload_Part2(void);
+
+
+#if DM_HV_TRANSLATE_MODE == ON
+float HV_Get_Resistance(float voltage);
+#endif
 
 /* USER CODE END Private defines */
 

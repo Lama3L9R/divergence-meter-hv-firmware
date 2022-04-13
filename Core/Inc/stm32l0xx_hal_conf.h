@@ -18,6 +18,14 @@
   *
   ******************************************************************************
   */
+
+#ifndef DM_HV_CONF
+#define DM_HV_CONF
+
+#define DM_HV_TRANSLATE_MODE OFF
+
+#endif
+
 /* USER CODE END Header */
 
 /* Define to prevent recursive inclusion -------------------------------------*/

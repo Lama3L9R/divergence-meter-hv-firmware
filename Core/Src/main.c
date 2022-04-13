@@ -215,58 +215,94 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
-unsigned char Main_MAX5481_Command_Write[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+
+unsigned char Main_MAX5481_Command_Write = 0;
 
 void Main_Update_MAX5481_Resistance(void) {
-    unsigned char* payload_part1 = Main_Get_Resistance_Payload_Part1();
-    unsigned char* payload_part2 = Main_Get_Resistance_Payload_Part2();
+    unsigned char payload_part1 = Main_Get_Resistance_Payload_Part1();
+    unsigned char payload_part2 = Main_Get_Resistance_Payload_Part2();
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wincompatible-pointer-types" // Suppress this warning because unsigned char* is the same as unsigned char(*)[8]
-    HAL_SPI_Transmit(&hspi1, &Main_MAX5481_Command_Write, 1, 10000); // Warning appears at here
-#pragma GCC diagnostic pop
-
-    HAL_SPI_Transmit(&hspi1, payload_part1, 1, 10000);
-    HAL_SPI_Transmit(&hspi1, payload_part2, 1, 10000);
-
-    free(payload_part1);
-    free(payload_part2);
+    HAL_SPI_Transmit(&hspi1, &Main_MAX5481_Command_Write, 1, 10000);
+    HAL_SPI_Transmit(&hspi1, &payload_part1, 1, 10000);
+    HAL_SPI_Transmit(&hspi1, &payload_part2, 1, 10000);
 }
 
-short Main_Read_GPIO_As_Binary(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin) {
+char Main_Read_GPIO_As_Binary(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin) {
     return HAL_GPIO_ReadPin(GPIOx, GPIO_Pin) == GPIO_PIN_SET ? 1 : 0;
 }
 
-unsigned char* Main_Get_Resistance_Payload_Part1(void) {
-    unsigned char* resistance = malloc(sizeof(unsigned char) * 8);
+#if DM_HV_TRANSLATE_MODE == OFF
 
-    resistance[0]  = Main_Read_GPIO_As_Binary(GPIOA, GPIO_PIN_0);
-    resistance[1]  = Main_Read_GPIO_As_Binary(GPIOA, GPIO_PIN_1);
-    resistance[2]  = Main_Read_GPIO_As_Binary(GPIOA, GPIO_PIN_2);
-    resistance[3]  = Main_Read_GPIO_As_Binary(GPIOA, GPIO_PIN_3);
-    resistance[4]  = Main_Read_GPIO_As_Binary(GPIOA, GPIO_PIN_4);
-    resistance[5]  = Main_Read_GPIO_As_Binary(GPIOA, GPIO_PIN_6);
-    resistance[6]  = Main_Read_GPIO_As_Binary(GPIOA, GPIO_PIN_7);
-    resistance[7]  = Main_Read_GPIO_As_Binary(GPIOA, GPIO_PIN_8);
+unsigned char Main_Get_Resistance_Payload_Part1(void) {
+    unsigned char resistance = 0;
 
-    return resistance;
-}
-
-unsigned char* Main_Get_Resistance_Payload_Part2(void) {
-    unsigned char* resistance = malloc(sizeof(unsigned char) * 8);
-
-    resistance[0] = Main_Read_GPIO_As_Binary(GPIOA, GPIO_PIN_9);
-    resistance[1] = Main_Read_GPIO_As_Binary(GPIOA, GPIO_PIN_10);
-    resistance[2] = Main_Read_GPIO_As_Binary(GPIOC, GPIO_PIN_14);
-    resistance[3] = 0;
-    resistance[4] = 0;
-    resistance[5] = 0;
-    resistance[6] = 0;
-    resistance[7] = 0;
+    resistance += Main_Read_GPIO_As_Binary(GPIOA, GPIO_PIN_0) << 1;
+    resistance += Main_Read_GPIO_As_Binary(GPIOA, GPIO_PIN_1) << 2;
+    resistance += Main_Read_GPIO_As_Binary(GPIOA, GPIO_PIN_2) << 3;
+    resistance += Main_Read_GPIO_As_Binary(GPIOA, GPIO_PIN_3) << 4;
+    resistance += Main_Read_GPIO_As_Binary(GPIOA, GPIO_PIN_4) << 5;
+    resistance += Main_Read_GPIO_As_Binary(GPIOA, GPIO_PIN_6) << 6;
+    resistance += Main_Read_GPIO_As_Binary(GPIOA, GPIO_PIN_7) << 7;
+    resistance += Main_Read_GPIO_As_Binary(GPIOA, GPIO_PIN_8) << 8;
 
     return resistance;
 }
 
+unsigned char Main_Get_Resistance_Payload_Part2(void) {
+    unsigned char resistance = 0;
+
+    resistance += Main_Read_GPIO_As_Binary(GPIOA, GPIO_PIN_9) << 0;
+    resistance += Main_Read_GPIO_As_Binary(GPIOA, GPIO_PIN_10) << 1;
+    resistance += Main_Read_GPIO_As_Binary(GPIOC, GPIO_PIN_14) << 2;
+    resistance += 0;
+    resistance += 0;
+    resistance += 0;
+    resistance += 0;
+    resistance += 0;
+
+    return resistance;
+}
+
+#elif
+
+unsigned char Main_Get_Resistance_Payload_Full(void) {
+    unsigned char vol = 0;
+
+    vol += Main_Read_GPIO_As_Binary(GPIOA, GPIO_PIN_0) << 1;
+    vol += Main_Read_GPIO_As_Binary(GPIOA, GPIO_PIN_1) << 2;
+    vol += Main_Read_GPIO_As_Binary(GPIOA, GPIO_PIN_2) << 3;
+    vol += Main_Read_GPIO_As_Binary(GPIOA, GPIO_PIN_3) << 4;
+    vol += Main_Read_GPIO_As_Binary(GPIOA, GPIO_PIN_4) << 5;
+    vol += Main_Read_GPIO_As_Binary(GPIOA, GPIO_PIN_6) << 6;
+    vol += Main_Read_GPIO_As_Binary(GPIOA, GPIO_PIN_7) << 7;
+    vol += Main_Read_GPIO_As_Binary(GPIOA, GPIO_PIN_8) << 8;
+
+    vol += Main_Read_GPIO_As_Binary(GPIOA, GPIO_PIN_9) << 9;
+    vol += Main_Read_GPIO_As_Binary(GPIOA, GPIO_PIN_10) << 10;
+    vol += Main_Read_GPIO_As_Binary(GPIOC, GPIO_PIN_14) << 11;
+    vol += 0;
+    vol += 0;
+    vol += 0;
+    vol += 0;
+    vol += 0;
+
+    return HV_Get_Resistance(vol);
+}
+
+unsigned char Main_Get_Resistance_Payload_Part1(void) {
+    return Main_Get_Resistance_Payload_Full();
+}
+
+unsigned char Main_Get_Resistance_Payload_Part2(void) {
+    return Main_Get_Resistance_Payload_Full() >> 8;
+}
+
+float HV_Get_Resistance(float voltage) {
+    float r = -(68000 * (40 * voltage - 7101)) / (40 * voltage - 51);
+    return ((r - 70.22f) * 1023) / 10000;
+}
+
+#endif
 
 /* USER CODE END 4 */
 
